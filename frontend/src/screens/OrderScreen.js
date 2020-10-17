@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { PayPalButton } from 'react-paypal-button-v2';
-import { Button, Col, ListGroup, Row, Card, Image } from 'react-bootstrap';
+import { Col, ListGroup, Row, Card, Image } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 
 import Loader from '../components/Loader';
