@@ -1,7 +1,13 @@
-const asyncHandler = require('express-async-handler');
-const generateToken = require('../utils/generateToken');
+import asyncHandler from 'express-async-handler';
+import generateToken from '../utils/generateToken.js';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import User from '../models/userModel.js';
 
-const User = require('../models/userModel');
+import mailgun from 'mailgun-js';
+const DOMAIN = 'sandbox8f00bef27b19491bb7c73df332bbf134.mailgun.org';
+const api = '110d04824475f2d94576a1433a2db49e-ba042922-0adf9597';
+const mg = mailgun({ apiKey: api, domain: DOMAIN });
 
 //@desc Auth user & get token
 //@route POST /api/users/login
@@ -11,7 +17,7 @@ const authUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
 
-  if (user && user.matchPassword(password)) {
+  if (user && (await bcrypt.compare(password, user.password))) {
     res.json({
       _id: user._id,
       name: user.name,
@@ -142,6 +148,10 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc Update a user
+//@route PUT /api/users/:id
+//@access Private, Admin
+
 const updateUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
 
@@ -164,13 +174,97 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = {
+//@desc Email the user with the password resetLink
+//@route PUT /api/users/forgot-password
+//@access Public
+
+const forgotPassword = (req, res) => {
+  const { email } = req.body;
+
+  User.findOne({ email }, (err, user) => {
+    if (err || !user) {
+      return res
+        .status(400)
+        .json({ message: 'User with this email does not exist' });
+    }
+
+    const token = generateToken(user._id);
+    const data = {
+      from: 'noreply@proshop.in',
+      to: email,
+      subject: 'Reset Proshop Password',
+      html: `
+      <h2>Please click on the given link to reset your password<h2>
+      <p>${process.env.CLIENT_URL}/reset-password/${token}</p>
+      `
+    };
+
+    return user.updateOne({ resetLink: token }, function(err, success) {
+      if (err) {
+        return res.status(400).json({ error: 'Reset password link error' });
+      } else {
+        mg.messages().send(data, function(error, body) {
+          if (error) {
+            return res.json({ error: error.message });
+          }
+          return res.json({
+            message: 'Email has been sent, kindly follow the instructions'
+          });
+        });
+      }
+    });
+  });
+};
+
+//@desc Allows user to update password using the resetLink received in email
+//@route PUT /api/users/reset-password
+//@access Public
+
+const resetPassword = (req, res) => {
+  const { resetLink, newPass } = req.body;
+  if (resetLink) {
+    jwt.verify(resetLink, process.env.JWT_SECRET, function(error, decodedData) {
+      if (error) {
+        return res.status(401).json({ message: 'Token incorrect or expired' });
+      }
+      User.findOne({ resetLink }, function(err, user) {
+        if (err || !user) {
+          return res
+            .status(400)
+            .json({ message: 'Token incorrect or expired' });
+        }
+        const obj = {
+          password: newPass,
+          resetLink: ''
+        };
+
+        user = Object.assign(user, obj);
+
+        user.save((err, result) => {
+          if (err) {
+            return res
+              .status(401)
+              .json({ error: 'Token incorrect or expired' });
+          } else {
+            res.status(200).json({ message: 'Your password has been changed' });
+          }
+        });
+      });
+    });
+  } else {
+    return res.status(401).json({ error: 'Authentication Error' });
+  }
+};
+
+export {
   authUser,
   registerUser,
   getUserProfile,
-  getUsers,
   getUserById,
+  getUsers,
   deleteUser,
+  updateUser,
   updateUserProfile,
-  updateUser
+  forgotPassword,
+  resetPassword
 };
