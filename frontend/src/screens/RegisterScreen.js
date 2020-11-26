@@ -70,7 +70,7 @@ const RegisterScreen = ({ location, history }) => {
           ></Form.Control>
         </Form.Group>
         <Form.Group controlId='confirmPassword'>
-          <Form.Label>confirm password</Form.Label>
+          <Form.Label>Confirm password</Form.Label>
           <Form.Control
             type='password'
             placeholder='Confirm password'

@@ -3,11 +3,13 @@ import generateToken from '../utils/generateToken.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User from '../models/userModel.js';
-
+import dotenv from 'dotenv';
 import mailgun from 'mailgun-js';
-const DOMAIN = 'sandbox8f00bef27b19491bb7c73df332bbf134.mailgun.org';
-const api = '110d04824475f2d94576a1433a2db49e-ba042922-0adf9597';
-const mg = mailgun({ apiKey: api, domain: DOMAIN });
+
+dotenv.config();
+const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN;
+const MAILGUN_KEY = process.env.MAILGUN_KEY;
+const mg = mailgun({ apiKey: MAILGUN_KEY, domain: MAILGUN_DOMAIN });
 
 //@desc Auth user & get token
 //@route POST /api/users/login
