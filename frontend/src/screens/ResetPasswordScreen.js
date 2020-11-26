@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Form, Button, Row, Col, Alert } from 'react-bootstrap';
+import { Form, Button } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import FormContainer from '../components/FormContainer';
 import Message from '../components/Message';
@@ -20,7 +20,7 @@ const ResetPasswordScreen = ({ match, history }) => {
     if (success) {
       setTimeout(() => history.push('/login'), 10000);
     }
-  }, [success]);
+  }, [success, history]);
 
   const submitHandler = e => {
     e.preventDefault();
